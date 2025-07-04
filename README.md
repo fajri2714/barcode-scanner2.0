@@ -3,12 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <title>Scan Barcode Project</title>
-  <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/minified/html5-qrcode.min.js"></script>
   <style>
     body {
       font-family: sans-serif;
       text-align: center;
       padding: 20px;
+      background: #f8f8f8;
     }
     #reader {
       width: 300px;
@@ -23,6 +24,7 @@
       padding: 10px 20px;
       font-size: 16px;
       margin-top: 20px;
+      cursor: pointer;
     }
   </style>
 </head>
@@ -39,30 +41,52 @@
 
   <script>
     let scannedText = "";
-    
-    document.getElementById("start-btn").addEventListener("click", function () {
+    let html5QrCode;
+
+    document.getElementById("start-btn").addEventListener("click", async function () {
       const readerDiv = document.getElementById("reader");
       readerDiv.style.display = "block";
       this.style.display = "none";
 
-      const html5QrCode = new Html5Qrcode("reader");
+      try {
+        // Minta akses kamera eksplisit terlebih dahulu
+        await navigator.mediaDevices.getUserMedia({ video: true });
 
-      html5QrCode.start(
-        { facingMode: "environment" },
-        { fps: 10, qrbox: 250 },
-        (decodedText) => {
-          if (!scannedText) {
-            scannedText = decodedText;
+        html5QrCode = new Html5Qrcode("reader");
 
-            document.getElementById("result-text").textContent = scannedText;
-            document.getElementById("result-box").style.display = "block";
-            html5QrCode.stop(); // stop scanner
+        html5QrCode.start(
+          { facingMode: "environment" },
+          {
+            fps: 15,
+            qrbox: 300,
+            disableFlip: true,
+            formatsToSupport: [
+              Html5QrcodeSupportedFormats.QR_CODE,
+              Html5QrcodeSupportedFormats.CODE_128,
+              Html5QrcodeSupportedFormats.CODE_39,
+              Html5QrcodeSupportedFormats.EAN_13,
+              Html5QrcodeSupportedFormats.UPC_A
+            ]
+          },
+          (decodedText) => {
+            if (!scannedText) {
+              scannedText = decodedText;
+              document.getElementById("result-text").textContent = scannedText;
+              document.getElementById("result-box").style.display = "block";
+
+              // Salin hasil barcode ke clipboard
+              navigator.clipboard.writeText(scannedText).catch(() => {});
+              
+              html5QrCode.stop(); // stop scanner
+            }
+          },
+          (errorMessage) => {
+            // silent scan error
           }
-        },
-        (errorMessage) => {
-          // do nothing
-        }
-      );
+        );
+      } catch (err) {
+        alert("Gagal mengakses kamera: " + err);
+      }
     });
 
     document.getElementById("copy-btn").addEventListener("click", () => {
