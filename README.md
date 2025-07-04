@@ -1,93 +1,81 @@
 <!DOCTYPE html>
-<html lang="id">
+<html>
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Scan Barcode</title>
-  <script src="https://unpkg.com/html5-qrcode@2.3.8/minified/html5-qrcode.min.js"></script>
+  <meta charset="UTF-8">
+  <title>Scan Barcode Project</title>
+  <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
   <style>
     body {
-      font-family: 'Segoe UI', sans-serif;
-      background: #f5f6fa;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
+      font-family: sans-serif;
+      text-align: center;
       padding: 20px;
-      color: #333;
-    }
-    h2 {
-      margin-top: 20px;
-      color: #2f80ed;
     }
     #reader {
-      width: 100%;
-      max-width: 400px;
-      margin: 20px auto;
-      border-radius: 10px;
-      overflow: hidden;
-      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      width: 300px;
+      margin: auto;
+      display: none;
     }
-    p {
-      font-size: 15px;
-      color: #555;
+    #result-box {
+      margin-top: 20px;
+      display: none;
     }
-    .status {
-      margin-top: 10px;
-      color: green;
-      font-weight: bold;
+    #start-btn, #copy-btn {
+      padding: 10px 20px;
+      font-size: 16px;
+      margin-top: 20px;
     }
   </style>
 </head>
 <body>
-  <h2>🔍 Scan Barcode</h2>
+  <h2>Scan Barcode Project</h2>
+  <p>Tekan tombol di bawah untuk mulai scan.</p>
+  <button id="start-btn">Mulai Scan</button>
   <div id="reader"></div>
-  <p>Setelah scan, hasil otomatis disalin dan kamu diarahkan ke halaman kerja.</p>
-  <p class="status" id="statusText"></p>
+
+  <div id="result-box">
+    <p><strong>Hasil Scan:</strong> <span id="result-text"></span></p>
+    <button id="copy-btn">Salin & Buka Link</button>
+  </div>
 
   <script>
-    const Html5QrcodeSupportedFormats = window.Html5QrcodeSupportedFormats;
+    let scannedText = "";
+    
+    document.getElementById("start-btn").addEventListener("click", function () {
+      const readerDiv = document.getElementById("reader");
+      readerDiv.style.display = "block";
+      this.style.display = "none";
 
-    const html5QrCode = new Html5Qrcode("reader");
+      const html5QrCode = new Html5Qrcode("reader");
 
-    function onScanSuccess(decodedText) {
-      if (!window.scanned) {
-        window.scanned = true;
-        document.getElementById("statusText").innerText = "✅ Barcode Terdeteksi:\n" + decodedText;
+      html5QrCode.start(
+        { facingMode: "environment" },
+        { fps: 10, qrbox: 250 },
+        (decodedText) => {
+          if (!scannedText) {
+            scannedText = decodedText;
 
-        navigator.clipboard.writeText(decodedText).catch(() => {});
-        const tujuan = `http://52.74.69.49/admin/#/admin/orderprojectscan?code=${encodeURIComponent(decodedText)}`;
-        setTimeout(() => {
-          window.location.href = tujuan;
-        }, 700);
+            document.getElementById("result-text").textContent = scannedText;
+            document.getElementById("result-box").style.display = "block";
+            html5QrCode.stop(); // stop scanner
+          }
+        },
+        (errorMessage) => {
+          // do nothing
+        }
+      );
+    });
+
+    document.getElementById("copy-btn").addEventListener("click", () => {
+      if (scannedText) {
+        navigator.clipboard.writeText(scannedText)
+          .then(() => {
+            const targetURL = `http://52.74.69.49/admin/#/admin/orderprojectscan?code=${encodeURIComponent(scannedText)}`;
+            window.location.href = targetURL;
+          })
+          .catch(err => {
+            alert("Gagal menyalin ke clipboard: " + err);
+          });
       }
-    }
-
-    function onScanError(err) {
-      // Optional: tampilkan jika perlu
-      // document.getElementById("statusText").innerText = "Tidak berhasil scan: " + err;
-    }
-
-    const config = {
-      fps: 15,
-      qrbox: 400,
-      disableFlip: true,
-      formatsToSupport: [
-        Html5QrcodeSupportedFormats.QR_CODE,
-        Html5QrcodeSupportedFormats.CODE_128,
-        Html5QrcodeSupportedFormats.CODE_39,
-        Html5QrcodeSupportedFormats.EAN_13,
-        Html5QrcodeSupportedFormats.UPC_A
-      ]
-    };
-
-    html5QrCode.start(
-      { facingMode: "environment" },
-      config,
-      onScanSuccess,
-      onScanError
-    ).catch(err => {
-      document.getElementById("statusText").innerText = "❌ Gagal memulai scanner: " + err;
-      console.error("Scanner error:", err);
     });
   </script>
 </body>
