@@ -1,106 +1,75 @@
 <!DOCTYPE html>
-<html>
+<html lang="id">
 <head>
   <meta charset="UTF-8">
-  <title>Scan Barcode Project</title>
-  <script src="https://unpkg.com/html5-qrcode@2.3.8/minified/html5-qrcode.min.js"></script>
+  <title>Scan Barcode - Versi Fix</title>
+  <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
   <style>
     body {
       font-family: sans-serif;
       text-align: center;
-      padding: 20px;
-      background: #f8f8f8;
+      background-color: #f7f9fc;
+      margin: 0;
+      padding: 0;
+    }
+    h1 {
+      color: #007bff;
+      margin-top: 20px;
     }
     #reader {
-      width: 300px;
-      margin: auto;
-      display: none;
+      width: 90%;
+      max-width: 400px;
+      margin: 0 auto;
+      border-radius: 12px;
+      overflow: hidden;
     }
-    #result-box {
-      margin-top: 20px;
-      display: none;
-    }
-    #start-btn, #copy-btn {
-      padding: 10px 20px;
-      font-size: 16px;
-      margin-top: 20px;
-      cursor: pointer;
+    p {
+      font-size: 15px;
+      color: #333;
+      margin: 20px;
     }
   </style>
 </head>
 <body>
-  <h2>Scan Barcode Project</h2>
-  <p>Tekan tombol di bawah untuk mulai scan.</p>
-  <button id="start-btn">Mulai Scan</button>
-  <div id="reader"></div>
 
-  <div id="result-box">
-    <p><strong>Hasil Scan:</strong> <span id="result-text"></span></p>
-    <button id="copy-btn">Salin & Buka Link</button>
-  </div>
+  <h1>Scan Barcode</h1>
+  <div id="reader"></div>
+  <p>Setelah scan, hasil otomatis disalin dan kamu diarahkan ke halaman kerja.</p>
 
   <script>
-    let scannedText = "";
-    let html5QrCode;
+    const html5QrCode = new Html5Qrcode("reader");
 
-    document.getElementById("start-btn").addEventListener("click", async function () {
-      const readerDiv = document.getElementById("reader");
-      readerDiv.style.display = "block";
-      this.style.display = "none";
+    function onScanSuccess(decodedText, decodedResult) {
+      console.log(`Hasil: ${decodedText}`);
 
-      try {
-        // Minta akses kamera eksplisit terlebih dahulu
-        await navigator.mediaDevices.getUserMedia({ video: true });
+      // Salin ke clipboard
+      navigator.clipboard.writeText(decodedText).then(() => {
+        console.log("Disalin ke clipboard:", decodedText);
+      });
 
-        html5QrCode = new Html5Qrcode("reader");
+      // Redirect ke halaman kerja (ganti sesuai kebutuhan)
+      window.location.href = "http://52.74.69.49/admin/#.login";
+    }
 
+    const config = {
+      fps: 15,
+      qrbox: { width: 250, height: 250 },
+      aspectRatio: 1.0
+    };
+
+    Html5Qrcode.getCameras().then(devices => {
+      if (devices && devices.length) {
+        const backCamera = devices.find(device => device.label.toLowerCase().includes('back')) || devices[0];
         html5QrCode.start(
-          { facingMode: "environment" },
-          {
-            fps: 15,
-            qrbox: 300,
-            disableFlip: true,
-            formatsToSupport: [
-              Html5QrcodeSupportedFormats.QR_CODE,
-              Html5QrcodeSupportedFormats.CODE_128,
-              Html5QrcodeSupportedFormats.CODE_39,
-              Html5QrcodeSupportedFormats.EAN_13,
-              Html5QrcodeSupportedFormats.UPC_A
-            ]
-          },
-          (decodedText) => {
-            if (!scannedText) {
-              scannedText = decodedText;
-              document.getElementById("result-text").textContent = scannedText;
-              document.getElementById("result-box").style.display = "block";
-
-              // Salin hasil barcode ke clipboard
-              navigator.clipboard.writeText(scannedText).catch(() => {});
-              
-              html5QrCode.stop(); // stop scanner
-            }
-          },
-          (errorMessage) => {
-            // silent scan error
-          }
-        );
-      } catch (err) {
-        alert("Gagal mengakses kamera: " + err);
+          { deviceId: { exact: backCamera.id } },
+          config,
+          onScanSuccess
+        ).catch(err => console.error("Gagal memulai kamera:", err));
+      } else {
+        alert("Kamera tidak ditemukan");
       }
-    });
-
-    document.getElementById("copy-btn").addEventListener("click", () => {
-      if (scannedText) {
-        navigator.clipboard.writeText(scannedText)
-          .then(() => {
-            const targetURL = `http://52.74.69.49/admin/#/admin/orderprojectscan?code=${encodeURIComponent(scannedText)}`;
-            window.location.href = targetURL;
-          })
-          .catch(err => {
-            alert("Gagal menyalin ke clipboard: " + err);
-          });
-      }
-    });
+    }).catch(err => console.error("Gagal mengambil daftar kamera:", err));
   </script>
+
 </body>
 </html>
