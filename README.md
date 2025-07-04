@@ -47,7 +47,7 @@
         console.log("Disalin ke clipboard:", decodedText);
       });
 
-      // Redirect ke halaman kerja (ganti sesuai kebutuhan)
+      // Redirect ke halaman kerja
       window.location.href = "http://52.74.69.49/admin/#.login";
     }
 
@@ -57,18 +57,14 @@
       aspectRatio: 1.0
     };
 
-    Html5Qrcode.getCameras().then(devices => {
-      if (devices && devices.length) {
-        const backCamera = devices.find(device => device.label.toLowerCase().includes('back')) || devices[0];
-        html5QrCode.start(
-          { deviceId: { exact: backCamera.id } },
-          config,
-          onScanSuccess
-        ).catch(err => console.error("Gagal memulai kamera:", err));
-      } else {
-        alert("Kamera tidak ditemukan");
-      }
-    }).catch(err => console.error("Gagal mengambil daftar kamera:", err));
+    html5QrCode.start(
+      { facingMode: "environment" },
+      config,
+      onScanSuccess
+    ).catch(err => {
+      console.error("Gagal memulai kamera belakang:", err);
+      alert("Tidak bisa mengakses kamera belakang. Coba izinkan dari pengaturan browser.");
+    });
   </script>
 
 </body>
